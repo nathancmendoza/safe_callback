@@ -1,0 +1,10 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "safe_callback"
+version = "0.0.1"
+description = "A declarative approach to exception handling in python"
+readme = "README.md"
+requires-python = ">=3.10"
