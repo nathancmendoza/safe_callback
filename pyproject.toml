@@ -4,7 +4,20 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "safe_callback"
+authors = [
+  { name="Nathan Mendoza", email="nathancm@uci.edu"}
+]
 version = "0.0.1"
 description = "A declarative approach to exception handling in python"
 readme = "README.md"
 requires-python = ">=3.10"
+classifiers = [
+  Development Status :: 3 - Alpha,
+  Intended Audience :: Developers,
+  License :: OSI Approved :: MIT License,
+  Programming Language :: Python :: 3
+]
+
+[project.urls]
+Homepage = "https://github.com/nathancmendoza/safe_callback"
+Issues = "https://github.com/nathancmendoza/safe_callback/issues"
