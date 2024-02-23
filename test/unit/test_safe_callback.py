@@ -13,7 +13,7 @@ def decorated_function():
         return f"Cannot divide {x} and {y} because denominator is 0!"
 
     @safe_callback.safecallback({
-        ZeroDivisionError: handle_function_error
+        ZeroDivisionError: (handle_function_error,)
     })
     def divide(x, y):
         return x / y
@@ -30,7 +30,7 @@ def decorated_method():
     class Calc:
 
         @safe_callback.safecallback({
-            ZeroDivisionError: handle_method_error
+            ZeroDivisionError: (handle_method_error,)
         })
         def divide(self, x, y):
             return x / y

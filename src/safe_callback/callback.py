@@ -5,129 +5,103 @@
 """
 
 from __future__ import annotations
-from typing import Callable, Any
-from abc import ABC, abstractmethod
+from typing import Callable, Any, Tuple, Dict, Type
+from .dispatcher import ErrorCallbackDispatcher
 
 
-class GuardedCallback(ABC):
-    def __init__(
-        self,
-        f,
-        error_dispatcher,
-        errors,
-        f_ok,
-        f_finally,
-        *fargs,
-        **fkwargs
-    ):
-        self.f = f
-        self.err_dispatch = error_dispatcher(errors)
-        self.f_args = fargs
-        self.f_kwargs = fkwargs
-        self.callback_result = None
+class _GuardedCallback:
+    def __init__(self):
+        self.__f = None
+        self.__f_ok = None
+        self.__f_finally = None
+        self.__err_dispatch = None
+        self.__f_args = None
+        self.__f_kwargs = None
+        self.__f_result = None
 
     def __call__(self):
         try:
-            self._use_callback()
+            self.use_callback()
         except Exception as err:
-            self._use_error_callback(
+            self.use_error_callback(
                 self.err_dispatch.find_error_handler(err),
                 err
             )
         else:
-            self._use_ok_callback()
+            self.use_ok_callback()
         finally:
-            self._use_final_callback()
+            self.use_final_callback()
 
-        return self.callback_result
+        return self.fresult
 
-    @abstractmethod
-    def _use_callback(self):
-        raise NotImplementedError
+    @property
+    def protected_callback(self):
+        """The protected_callback property."""
+        return self.__f
 
-    @abstractmethod
-    def _use_error_callback(
-        self,
-        cb: Callable[[Exception, ...], Any],
-        error: Exception
-    ):
-        raise NotImplementedError
+    @protected_callback.setter
+    def protected_callback(self, cb: Callable[[...], Any]):
+        self.__f = cb
 
-    @abstractmethod
-    def _use_ok_callback(self):
-        raise NotImplementedError
+    @property
+    def ok_callback(self):
+        """The ok_callback property."""
+        return self.__f_ok
 
-    @abstractmethod
-    def _use_final_callback(self):
-        raise NotImplementedError
+    @ok_callback.setter
+    def ok_callback(self, cb: Callable[[...], Any]):
+        self.__f_ok = cb
 
+    @property
+    def cleanup_callback(self):
+        """The cleanup_callback property."""
+        return self.__f_finally
 
-class BasicGuardedCallback(GuardedCallback):
-    def _use_callback(self):
-        self.callback_result = self.f(*self.f_args, **self.f_kwargs)
+    @cleanup_callback.setter
+    def cleanup_callback(self, cb: Callable[[...], Any]):
+        self.__f_finally = cb
 
-    def _use_error_callback(self, cb, error):
-        if cb:
-            self.callback_result = cb(error, *self.f_args, **self.f_kwargs)
-        else:
-            raise
+    @property
+    def fargs(self):
+        """The fargs property."""
+        return self.__f_args
 
-    def _use_ok_callback(self):
+    @fargs.setter
+    def fargs(self, arguments: Tuple[Any]):
+        self.__f_args = arguments
+
+    @property
+    def fkwargs(self):
+        """The fkwargs property."""
+        return self.__f_kwargs
+
+    @fkwargs.setter
+    def fkwargs(self, keyword_arguments: Dict[str, Any]):
+        self.__f_kwargs = keyword_arguments
+
+    @property
+    def fresult(self):
+        """The fresult property."""
+        return self.__f_result
+
+    @fresult.setter
+    def fresult(self, value: Any):
+        self.__f_result = value
+
+    @property
+    def dispatcher(self):
+        """The dispatcher property."""
+        return self.__err_dispatch
+
+    @dispatcher.setter
+    def dispatcher(self, dispatcher_class: Type[ErrorCallbackDispatcher]):
+        self.__err_dispatch = dispatcher_class()
+
+    def use_callback(self):
+        self.fresult = self.__f(*self.fargs, **self.fkwargs)
+
+    def use_ok_callback(self):
         pass
 
-    def _use_final_callback(self):
+    def use_final_callback(self):
         pass
-
-
-class GuardedCallbackBuilder:
-    def set_callback(self, f: Callable[[...], Any]) -> GuardedCallbackBuilder:
-        self.f = f
-        return self
-
-    def set_ok_callback(
-        self,
-        f: Callable[[...], Any]
-    ) -> GuardedCallbackBuilder:
-        self.ok_callback = f
-        return self
-
-    def set_finally_callback(
-        self,
-        f: Callable[[...], Any]
-    ) -> GuardedCallbackBuilder:
-        self.finally_callback = f
-        return self
-
-    def set_pass_context(self, yes: bool) -> GuardedCallbackBuilder:
-        self.pass_context = yes
-        return self
-
-    def add_context(self, *args, **kwargs) -> GuardedCallbackBuilder:
-        self.f_args = args
-        self.f_kwargs = kwargs
-        return self
-
-    def set_error_interpretation_behavior(
-        self,
-        behavior
-    ) -> GuardedCallbackBuilder:
-        self.error_interpretation = behavior
-        return self
-
-    def set_dispatcher_class(
-        self,
-        dispatcher
-    ) -> GuardedCallbackBuilder:
-        self.dispatcher = dispatcher
-        return self
-
-    def build_guarded_callback(self, errors):
-        return BasicGuardedCallback(
-            self.f,
-            self.dispatcher,
-            errors,
-            self.ok_callback,
-            self.finally_callback,
-            *self.f_args,
-            **self.f_kwargs
-        )
