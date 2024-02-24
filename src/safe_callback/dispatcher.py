@@ -6,21 +6,14 @@
 
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import Callable, Any, Type
+from typing import Callable, Any, Type, Optional
 from dataclasses import dataclass
-
-
-def default_error_usage(self, cb: Callable[[...], Any], error: Exception):
-    if cb:
-        cb(error, *self.fargs, **self.fkwargs)
-    else:
-        raise
 
 
 @dataclass
 class ErrorCallback:
     handler: Callable[[...], Any]
-    usage: Callable[[...], Any]
+    usage: Optional[Callable[[...], Any]]
 
 
 class ErrorCallbackDispatcher(ABC):
@@ -38,7 +31,7 @@ class ErrorCallbackDispatcher(ABC):
         self,
         exc: Type[Exception],
         handler: Callable[[...], Any],
-        usage: Callable[[...], Any] = default_error_usage
+        usage: Optional[Callable[[...], Any]] = None
     ) -> None:
         self.err_mapping.update({exc: ErrorCallback(handler, usage)})
 

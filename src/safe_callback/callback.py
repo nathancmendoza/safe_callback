@@ -23,8 +23,13 @@ class _GuardedCallback:
         try:
             self.use_callback()
         except Exception as err:
+            dispatch_action = self.__err_dispatch.dispatch_error(err)
+            if dispatch_action:
+                if dispatch_action.usage:
+                    setattr(self, "use_error_callback", dispatch_action.usage)
+
             self.use_error_callback(
-                self.err_dispatch.find_error_handler(err),
+                dispatch_action.handler,
                 err
             )
         else:
@@ -105,3 +110,9 @@ class _GuardedCallback:
 
     def use_final_callback(self):
         pass
+
+    def use_error_callback(self, cb: Callable[[...], Any], error: Exception):
+        if cb:
+            self.fresult = cb(error, *self.fargs, **self.fkwargs)
+        else:
+            raise
