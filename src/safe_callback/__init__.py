@@ -4,36 +4,37 @@
     :module_author: Nathan Mendoza
 """
 
-from __future__ import annotations
-from typing import Callable, Any
-from types import MethodType
 
-from .callback import _GuardedCallback
-from .dispatcher import AbsoluteErrorDispatcher
+class SafeCallback:
+    def __init__(self, arg):
+        self.args = arg
+        self.__f_result = None
 
-
-def safecallback(
-    errors,
-    # callback_ok,
-    # callback_cleanup,
-    # pass_context,
-    # follow_exc_hierarchies,
-    # reraise_unknown
-):
-    def decorator(f):
+    def __call__(self, func):
         def wrapper(*args, **kwargs):
-            return GuardedCallbackBuilder() \
-                .set_callback(f) \
-                .set_dispatcher_class(AbsoluteErrorDispatcher) \
-                .set_dispatchable_errors(errors) \
-                .add_context(*args, **kwargs) \
-                .set_ok_callback(None) \
-                .set_finally_callback(None) \
-                .build_guarded_callback()()
+            try:
+                self.__f_result = func(*args, **kwargs)
+            except Exception as err:
+                self.f_error(err)
+            else:
+                self.f_ok()
+            finally:
+                self.f_finally()
+
+            return self.__f_result
         return wrapper
-    return decorator
+
+    def f_error(self, error):
+        raise
+
+    def f_ok(self):
+        pass
+
+    def f_finally(self):
+        pass
 
 
+"""
 class GuardedCallbackBuilder:
 
     def __init__(self):
@@ -97,3 +98,4 @@ class GuardedCallbackBuilder:
 
     def build_guarded_callback(self):
         return self.__wrapped
+"""
