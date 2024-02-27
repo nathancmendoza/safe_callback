@@ -5,9 +5,9 @@
 """
 
 
-class SafeCallback:
-    def __init__(self, arg):
-        self.args = arg
+class safecallback:
+    def __init__(self, errors):
+        self.__err_map = errors
         self.__f_result = None
 
     def __call__(self, func):
@@ -25,7 +25,10 @@ class SafeCallback:
         return wrapper
 
     def f_error(self, error):
-        raise
+        if cb := self.__err_map.get(type(error)):
+            self.__f_result = cb(error)
+        else:
+            raise error
 
     def f_ok(self):
         pass
