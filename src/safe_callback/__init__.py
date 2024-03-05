@@ -5,100 +5,43 @@
 """
 
 
-class safecallback:
-    def __init__(self, errors):
-        self.__err_map = errors
-        self.__f_result = None
+def safecallback(errors=None):
 
-    def __call__(self, func):
-        def wrapper(*args, **kwargs):
+    class GuardedCallback:
+        def __init__(self, func):
+            self.__err_map = errors or dict()
+            self.__func = func
+            self.__f_result = None
+            self.__exception = None
+
+        def __call__(self, *args, **kwargs):
             try:
-                self.__f_result = func(*args, **kwargs)
+                self.__f_result = self.__func(*args, **kwargs)
             except Exception as err:
-                self.f_error(err)
+                self.__exception = err
+                self.__f_error()
             else:
-                self.f_ok()
+                self.__f_ok()
             finally:
-                self.f_finally()
+                self.__f_finally()
 
             return self.__f_result
-        return wrapper
 
-    def f_error(self, error):
-        if cb := self.__err_map.get(type(error)):
-            self.__f_result = cb(error)
-        else:
-            raise error
+        def __f_error(self):
+            if cb := self.__err_map.get(type(self.__exception)):
+                self.__f_result = cb(self.__exception)
+            else:
+                raise self.__exception
 
-    def f_ok(self):
-        pass
+        def __f_ok(self):
+            pass
 
-    def f_finally(self):
-        pass
+        def __f_finally(self):
+            pass
 
+        def error_handler(self, error):
+            def error_mapper(f):
+                self.__err_map[error] = f
+            return error_mapper
 
-"""
-class GuardedCallbackBuilder:
-
-    def __init__(self):
-        self.__wrapped = _GuardedCallback()
-
-    def set_callback(self, f: Callable[[...], Any]) -> GuardedCallbackBuilder:
-        self.__wrapped.protected_callback = f
-        return self
-
-    def set_ok_callback(
-        self,
-        f: Callable[[...], Any]
-    ) -> GuardedCallbackBuilder:
-        self.__wrapped.ok_callback = f
-        return self
-
-    def set_finally_callback(
-        self,
-        f: Callable[[...], Any]
-    ) -> GuardedCallbackBuilder:
-        self.__wrapped.cleanup_callback = f
-        return self
-
-    def add_context(self, *args, **kwargs) -> GuardedCallbackBuilder:
-        self.__wrapped.fargs = args
-        self.__wrapped.fkwargs = kwargs
-        return self
-
-    def set_dispatcher_class(
-        self,
-        dispatcher
-    ) -> GuardedCallbackBuilder:
-        self.__wrapped.dispatcher = dispatcher
-        return self
-
-    def set_dispatchable_errors(self, error_map):
-        for err, dispatch in error_map.items():
-            self.__wrapped.dispatcher.add_dispatchable_error(err, *dispatch)
-        return self
-
-    def set_callback_usage(self, usage):
-        setattr(
-            self.__wrapped,
-            "use_callback",
-            MethodType(usage, self.__wrapped)
-        )
-
-    def set_ok_callback_usage(self, usage):
-        setattr(
-            self.__wrapped,
-            "use_ok_callback",
-            MethodType(usage, self.__wrapped)
-        )
-
-    def set_finally_callback_ussage(self, usage):
-        setattr(
-            self.__wrapped,
-            "use_final_callback",
-            MethodType(usage, self.__wrapped)
-        )
-
-    def build_guarded_callback(self):
-        return self.__wrapped
-"""
+    return GuardedCallback
