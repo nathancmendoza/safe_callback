@@ -4,44 +4,43 @@
     :module_author: Nathan Mendoza
 """
 
+from types import MethodType
+
 
 def safecallback(errors=None):
+    def decorator(func):
 
-    class GuardedCallback:
-        def __init__(self, func):
-            self.__err_map = errors or dict()
-            self.__func = func
-            self.__f_result = None
-            self.__exception = None
+        def do_error_handling(ctx, error):
+            for error_type, handler in ctx.errors.items():
+                if isinstance(error, error_type):
+                    handler(error)
+                    break
+            else:
+                raise error
 
-        def __call__(self, *args, **kwargs):
+        def do_success_handling(ctx):
+            pass
+
+        def do_finally_step(ctx):
+            pass
+
+        def wrapper(*args, **kwargs):
             try:
-                self.__f_result = self.__func(*args, **kwargs)
+                wrapper.result = func(*args, **kwargs)
             except Exception as err:
-                self.__exception = err
-                self.__f_error()
+                wrapper.do_error_handling(err)
             else:
-                self.__f_ok()
+                wrapper.do_success_handling()
             finally:
-                self.__f_finally()
+                wrapper.do_finally_step()
 
-            return self.__f_result
+            return wrapper.result
 
-        def __f_error(self):
-            if cb := self.__err_map.get(type(self.__exception)):
-                self.__f_result = cb(self.__exception)
-            else:
-                raise self.__exception
+        wrapper.errors = errors or dict()
+        wrapper.result = None
+        wrapper.do_error_handling = MethodType(do_error_handling, wrapper)
+        wrapper.do_success_handling = MethodType(do_success_handling, wrapper)
+        wrapper.do_finally_step = MethodType(do_finally_step, wrapper)
+        return wrapper
 
-        def __f_ok(self):
-            pass
-
-        def __f_finally(self):
-            pass
-
-        def error_handler(self, error):
-            def error_mapper(f):
-                self.__err_map[error] = f
-            return error_mapper
-
-    return GuardedCallback
+    return decorator
