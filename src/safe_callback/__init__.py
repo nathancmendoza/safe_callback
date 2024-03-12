@@ -24,6 +24,21 @@ def safecallback(errors=None):
         def do_finally_step(ctx):
             pass
 
+        def error_handler(ctx, error_type: Exception):
+            def map_error(handler):
+                ctx.errors.update({error_type: handler})
+            return map_error
+
+        def success_handler(ctx):
+            def use_else_workflow(workflow):
+                ctx.do_success_handling = MethodType(workflow, ctx)
+            return use_else_workflow
+
+        def finally_workflow(ctx):
+            def use_finally_workflow(workflow):
+                ctx.do_finally_step = MethodType(workflow, ctx)
+            return use_finally_workflow
+
         def wrapper(*args, **kwargs):
             try:
                 wrapper.result = func(*args, **kwargs)
@@ -41,6 +56,9 @@ def safecallback(errors=None):
         wrapper.do_error_handling = MethodType(do_error_handling, wrapper)
         wrapper.do_success_handling = MethodType(do_success_handling, wrapper)
         wrapper.do_finally_step = MethodType(do_finally_step, wrapper)
+        wrapper.error_handler = MethodType(error_handler, wrapper)
+        wrapper.success_handler = MethodType(success_handler, wrapper)
+        wrapper.finally_workflow = MethodType(finally_workflow, wrapper)
         return wrapper
 
     return decorator
