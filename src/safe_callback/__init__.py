@@ -36,7 +36,7 @@ def safecallback(errors=None):
 
             return wrapper.result
 
-        wrapper.errors = errors or dict()
+        wrapper.errors = errors or {}
         wrapper.result = None
         wrapper.do_error_handling = MethodType(do_error_handling, wrapper)
         wrapper.do_success_handling = MethodType(do_success_handling, wrapper)
