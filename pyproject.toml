@@ -7,7 +7,7 @@ name = "safe_callback"
 authors = [
   { name="Nathan Mendoza", email="nathancm@uci.edu"}
 ]
-version = "0.0.4"
+version = "0.0.5"
 description = "A declarative approach to exception handling in python"
 readme = "README.md"
 requires-python = ">=3.10"
